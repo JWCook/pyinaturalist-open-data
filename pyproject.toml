@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "pyinaturalist-open-data"
+version = "0.1.0"
+description = "Python utilities for working with inaturalist-open-data"
+authors = ["'Jordan Cook'"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+alembic = "^1.6.0"
+boto3 = "^1.17.0"
+pyinaturalist = "^0.12.0"
+requests-cache = "^0.6.3"
+
+[tool.poetry.dev-dependencies]
+black = "^21.5b0"
+isort = "^5.8.0"
+mypy = "^0.812"
+flake8 = "^3.9.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+skip-string-normalization = true
+line-length = 100
+
+[tool.isort]
+profile = 'black'
+line_length = 100
+skip_gitignore = true
+known_first_party = ['test']
