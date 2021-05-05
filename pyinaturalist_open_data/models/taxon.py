@@ -15,8 +15,8 @@ class Taxon:
 
     id: int = sa_field(Integer, init=False, primary_key=True, index=True)
     ancestry: str = sa_field(String, default=None)
-    rank: str = sa_field(String, default=None)
     rank_level: str = sa_field(String, default=None)
+    rank: str = sa_field(String, default=None)
     name: str = sa_field(String, default=None, index=True)
     active: bool = sa_field(Boolean, default=None)
 
