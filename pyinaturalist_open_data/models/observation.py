@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 
 from pyinaturalist_open_data.models import Base, sa_field
 
@@ -24,3 +24,7 @@ class Observation:
 
     user = relationship('User', back_populates='observations')
     taxon = relationship('Taxon', back_populates='observations')
+
+    # Aliases for columns as provided in the CSV file
+    observation_uuid = synonym('observation_uuid')
+    observer_id = synonym('user_id')

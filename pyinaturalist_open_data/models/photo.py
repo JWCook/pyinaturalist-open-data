@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from sqlalchemy import ForeignKey, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, synonym
 
 from pyinaturalist_open_data.models import Base, sa_field
 
@@ -24,3 +24,7 @@ class Photo:
 
     observation = relationship('Observation', back_populates='photos')
     user = relationship('User', back_populates='photos')
+
+    # Aliases for columns as provided in the CSV file
+    photo_uuid = synonym('observation_uuid')
+    observer_id = synonym('user_id')
