@@ -5,8 +5,16 @@ from sqlalchemy.orm import registry
 
 Base = registry()
 
+# Table names should be singular
+TABLE_RENAMES = {
+    'observers': 'user',
+    'observations': 'observation',
+    'taxa': 'taxon',
+    'photos': 'photo',
+}
 
-def sa_field(col_type, **kwargs):
+
+def sa_field(col_type, index: bool = False, primary_key: bool = False, **kwargs):
     """Get a dataclass field with SQLAlchemy column metadata"""
-    col = col_type if isinstance(col_type, Column) else Column(col_type)
-    return field(**kwargs, metadata={"sa": col})
+    column = Column(col_type, index=index, primary_key=primary_key)
+    return field(**kwargs, metadata={"sa": column})
