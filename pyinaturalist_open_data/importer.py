@@ -1,11 +1,11 @@
 """Functions for downloading and loading inaturalist open data into a database"""
 # TODO: Check local and remote timestamps to only download if a new version is available
-# TODO: Progress bar callback
-# TODO: Read CSVs in chunks
 import csv
 import os
-import tarfile
-from os.path import dirname, exists, expanduser, join
+from io import FileIO
+from os.path import basename, dirname, exists, expanduser, join
+from tarfile import TarFile
+from time import time
 
 import boto3
 from botocore import UNSIGNED
@@ -16,7 +16,7 @@ from sqlalchemy.exc import OperationalError
 
 from .constants import BUCKET_NAME, DATA_DIR, DEFAULT_DB_URI, METADATA_DL_PATH, METADATA_KEY
 from .models import Base, Observation, Photo, Taxon, User
-from .progress import get_download_progress, get_progress, get_spinner_progress
+from .progress import get_download_progress, get_progress
 
 MODEL_CSV_FILES = {
     Observation: 'observations.csv',
@@ -24,6 +24,28 @@ MODEL_CSV_FILES = {
     Taxon: 'taxa.csv',
     User: 'observers.csv',
 }
+
+
+class FlatTarFile(TarFile):
+    """Extracts all archive contents to a flat base directory, ignoring archive subdirectories"""
+
+    def extract(self, member, path="", **kwargs):
+        if member.isfile():
+            member.name = basename(member.name)
+            super().extract(member, path, **kwargs)
+
+
+class ProgressIO(FileIO):
+    """File object wrapper that updates read progress"""
+
+    def __init__(self, path, *args, **kwargs):
+        self._total_size = os.path.getsize(path)
+        self.progress, self.task = get_download_progress(self._total_size, 'Extracting')
+        super().__init__(path, *args, **kwargs)
+
+    def read(self, size):
+        self.progress.update(self.task, advance=size)
+        return super().read(size)
 
 
 def download_metadata(download_path: str = METADATA_DL_PATH):
@@ -43,15 +65,14 @@ def download_metadata(download_path: str = METADATA_DL_PATH):
         download_file(BUCKET_NAME, METADATA_KEY, download_path)
 
     # Extract files
-    with get_spinner_progress('Extracting'):
-        tar = tarfile.open(download_path, 'r:gz')
-        tar.extractall(path=dirname(download_path))
-        tar.close()
+    progress_file = ProgressIO(download_path)
+    with FlatTarFile.open(fileobj=progress_file) as archive, progress_file.progress:
+        archive.extractall(path=dirname(download_path))
 
 
 def download_file(bucket_name: str, key: str, download_path: str):
     """Download a file from S3, with progress bar"""
-    # First get file size for progress bar
+    # Get file size for progress bar
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
     response = s3.head_object(Bucket=bucket_name, Key=key)
     file_size = response['ContentLength']
@@ -90,13 +111,12 @@ def load_table(engine, model):
 
     num_lines = sum(1 for _ in open(csv_path)) - 1
     progress, task = get_progress(num_lines, f'Loading {model} data...')
-    with progress:
-        with open(csv_path) as csv_file:
-            reader = csv.reader(csv_file, delimiter='\t')
-            next(reader)  # Skip header
+    with progress, open(csv_path) as csv_file:
+        reader = csv.reader(csv_file, delimiter='\t')
+        next(reader)  # Skip header
 
-            for chunk in read_chunks(reader, progress, task):
-                engine.execute(insert(model), [map_columns(model, row) for row in chunk])
+        for chunk in read_chunks(reader, progress, task):
+            engine.execute(insert(model), [map_columns(model, row) for row in chunk])
 
 
 def read_chunks(reader, progress, task, chunksize=2000):
@@ -120,5 +140,7 @@ def map_columns(model, row):
 
 
 if __name__ == '__main__':
+    start = time()
     download_metadata()
     load_all()
+    print(f'Finished in {time() - start:.2f} seconds')
