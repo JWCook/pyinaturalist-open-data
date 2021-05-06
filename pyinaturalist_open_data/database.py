@@ -7,8 +7,8 @@ from time import time
 from dateutil.parser import parse as parse_date
 from rich import print
 from sqlalchemy import create_engine, delete, insert
-from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
 from sqlalchemy.sql.sqltypes import Boolean, DateTime
 
 from .constants import DATA_DIR, DEFAULT_DB_URI
@@ -30,7 +30,7 @@ def create_tables(engine):
     Base.metadata.create_all(engine)
 
 
-def load_all(db_uri: str = DEFAULT_DB_URI, verbose=0):
+def load_all(db_uri: str = DEFAULT_DB_URI, download_dir: str = DATA_DIR, verbose: int = 0):
     """Load contents of CSV files into a database. This is just here for convenience since it works
     with all supported DB dialects. DB-specific bulk inserts are faster, if available.
     """
@@ -42,16 +42,16 @@ def load_all(db_uri: str = DEFAULT_DB_URI, verbose=0):
     for model in [User, Taxon, Observation, Photo]:
         try:
             start = time()
-            load_table(session, model)
+            load_table(session, model, download_dir)
             if verbose:
                 print(f'Finished in {time() - start:.2f} seconds')
         except OperationalError as e:
             print(e)
 
 
-def load_table(session, model):
+def load_table(session, model, download_dir):
     """Load CSV contents into a table, with progress bar"""
-    csv_path = join(DATA_DIR, MODEL_CSV_FILES[model])
+    csv_path = join(download_dir, MODEL_CSV_FILES[model])
     progress, task = get_progress(0, f'Loading [magenta]{model.__name__}[/magenta] records')
 
     # Clear table and insert everything; faster than checking if individual rows exist
@@ -66,6 +66,7 @@ def load_table(session, model):
         for chunk in read_chunks(reader, progress, task):
             session.execute(insert(model), [map_columns(model, row) for row in chunk])
         session.commit()
+
 
 def read_chunks(reader, progress, task, chunksize=20000):
     """Read a CSV file in chunks"""

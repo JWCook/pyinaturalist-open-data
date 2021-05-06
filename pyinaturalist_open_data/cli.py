@@ -2,7 +2,7 @@ from logging import basicConfig, getLogger
 
 import click
 
-from .constants import DEFAULT_DB_URI, METADATA_DL_PATH
+from .constants import DATA_DIR, DEFAULT_DB_URI, METADATA_DL_PATH
 from .database import load_all
 from .download import download_metadata
 
@@ -13,6 +13,10 @@ VERBOSITY_LOG_LEVELS = {
     2: 'INFO',
     3: 'DEBUG'
 }
+
+download_dir_option = click.option(
+    '-d', '--download-dir', default=DATA_DIR, help='Alternate path for downloads'
+)
 
 @click.group()
 @click.option('-v', '--verbose', count=True, help='Show more detailed output')
@@ -29,21 +33,20 @@ def inat(ctx, verbose):
 
 
 @inat.command()
-@click.option(
-    '-d', '--download-path', default=METADATA_DL_PATH, help='Alternate download path for archive'
-)
+@download_dir_option
 @click.pass_context
-def dl(ctx, download_path):
-    """Download stuff"""
-    download_metadata(download_path)
+def dl(ctx, download_dir):
+    """Download and extract inaturalist open data archive"""
+    download_metadata(download_dir, verbose=ctx.obj['verbose'])
 
 
 @inat.command()
-@click.option('-u', '--uri', default=DEFAULT_DB_URI, help='Database URI')
+@download_dir_option
+@click.option('-u', '--uri', default=DEFAULT_DB_URI, help='Alternate database URI to connect to')
 @click.pass_context
-def load(ctx, uri):
+def load(ctx, download_dir, uri):
     """Load contents of CSV files into a database"""
-    load_all(uri, verbose=ctx.obj['verbose'])
+    load_all(uri, download_dir=download_dir, verbose=ctx.obj['verbose'])
 
 
 if __name__ == '__main__':
