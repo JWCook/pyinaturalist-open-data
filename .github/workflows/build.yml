@@ -72,7 +72,7 @@ jobs:
       - name: Run linter
         run: poetry run flake8 .
       - name: Run type checks
-        run: poetry run mypy --ignore-missing-imports .
+        run: poetry run mypy .
 
       # - name: Generate code coverage report
       #   run: pytest --cov --cov-report=term --cov-report=html
