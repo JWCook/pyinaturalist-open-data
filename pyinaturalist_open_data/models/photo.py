@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import relationship, synonym
 
-from pyinaturalist_open_data.models import Base, sa_field
+from . import Base, sa_field
 
 
 @Base.mapped

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from sqlalchemy import Integer, String
 
-from pyinaturalist_open_data.models import Base, sa_field
+from .base import Base, sa_field
 
 
 @Base.mapped

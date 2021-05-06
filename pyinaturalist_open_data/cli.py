@@ -2,8 +2,7 @@ from logging import basicConfig
 
 import click
 
-from pyinaturalist_open_data.constants import DEFAULT_DB_URI, METADATA_DL_PATH
-
+from .constants import DEFAULT_DB_URI, METADATA_DL_PATH
 from .database import load_all
 from .download import download_metadata
 

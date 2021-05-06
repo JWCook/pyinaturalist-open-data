@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from pyinaturalist_open_data.models import Base, sa_field
+from .base import Base, sa_field
 
 
 @Base.mapped

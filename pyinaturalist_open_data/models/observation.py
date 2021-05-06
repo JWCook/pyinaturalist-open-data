@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship, synonym
 
-from pyinaturalist_open_data.models import Base, sa_field
+from .base import Base, sa_field
 
 
 @Base.mapped
