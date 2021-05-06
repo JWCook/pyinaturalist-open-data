@@ -7,6 +7,7 @@ from time import time
 from dateutil.parser import parse as parse_date
 from rich import print
 from sqlalchemy import create_engine, delete, insert
+from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.sqltypes import Boolean, DateTime
 
@@ -34,37 +35,37 @@ def load_all(db_uri: str = DEFAULT_DB_URI, verbose=False):
     with all supported DB dialects. DB-specific bulk inserts are faster, if available.
     """
     print('[cyan]Creating tables')
-    engine = create_engine(db_uri, echo=verbose)
-    create_tables(engine)
+    session = Session(bind=create_engine(db_uri, echo=verbose))
+    create_tables(session.get_bind())
     print(f'[cyan]Loading data from [magenta]{DATA_DIR}/*.csv[cyan]...')
 
     for model in [User, Taxon, Observation, Photo]:
         try:
             start = time()
-            load_table(engine, model)
+            load_table(session, model)
             if verbose:
                 print(f'Finished in {time() - start:.2f} seconds')
         except OperationalError as e:
             print(e)
 
 
-def load_table(engine, model):
+def load_table(session, model):
     """Load CSV contents into a table, with progress bar"""
     csv_path = join(DATA_DIR, MODEL_CSV_FILES[model])
     progress, task = get_progress(0, f'Loading [magenta]{model.__name__}[/magenta] records')
 
     # Clear table and insert everything; faster than checking if individual rows exist
-    engine.execute(delete(model))
+    session.execute(delete(model))
 
     with progress, open(csv_path) as csv_file:
         num_lines = sum(1 for _ in open(csv_path)) - 1
         progress.update(task, total=num_lines)
         reader = csv.reader(csv_file, delimiter='\t')
-        next(reader)  # Skip header
+        next(reader)  # Skip headers
 
         for chunk in read_chunks(reader, progress, task):
-            engine.execute(insert(model), [map_columns(model, row) for row in chunk])
-
+            session.execute(insert(model), [map_columns(model, row) for row in chunk])
+        session.commit()
 
 def read_chunks(reader, progress, task, chunksize=20000):
     """Read a CSV file in chunks"""
@@ -81,7 +82,7 @@ def read_chunks(reader, progress, task, chunksize=20000):
 
 def map_columns(model, row):
     """Get a column mapping from model properties to CSV columns. These are already in the same
-    order, but since we're using the (faster) lower-level ``engine.execute``, this must be explicit.
+    order, but since we're using a lower-level bulk insert, this must be explicit.
     """
 
     return {col.name: convert_types(col, row[i]) for i, col in enumerate(model.__mapper__.columns)}
