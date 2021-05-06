@@ -7,7 +7,6 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-alembic = "^1.6"
 appdirs = "^1.4"
 boto3 = "^1.17"
 pyinaturalist = "~0.12.0"
