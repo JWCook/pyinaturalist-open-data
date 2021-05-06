@@ -10,8 +10,7 @@ from .download import download_metadata
 @click.group()
 @click.option('-v', '--verbose', is_flag=True, help='Show additional information')
 def inat(verbose):
-    if verbose:
-        basicConfig(level='INFO')
+    basicConfig(level='INFO' if verbose else 'WARN')
 
 
 @inat.command()

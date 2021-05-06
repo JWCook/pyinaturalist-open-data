@@ -20,6 +20,7 @@ def get_progress(total: int, description: str = 'Loading') -> ProgressTask:
         BarColumn(),
         '[green]{task.completed}/{task.total}',
         '[progress.percentage]{task.percentage:>3.0f}%',
+        TimeRemainingColumn(),
     )
     return progress, get_task(progress, total, description)
 
