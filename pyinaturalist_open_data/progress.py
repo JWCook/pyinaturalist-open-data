@@ -1,5 +1,5 @@
 """Progress bar configuration"""
-from typing import Tuple
+from typing import Optional, Tuple
 
 from rich.progress import (
     BarColumn,
@@ -41,5 +41,5 @@ def get_spinner_progress(description: str = 'Loading') -> Progress:
     return progress
 
 
-def get_task(progress, total: int, description: str) -> int:
+def get_task(progress, total: Optional[int], description: str) -> int:
     return progress.add_task(f'[cyan]{description}...', total=total)
