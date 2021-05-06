@@ -14,7 +14,9 @@ class Photo:
 
     uuid: str = sa_field(String, init=False, primary_key=True, index=True)
     photo_id: int = sa_field(Integer, default=None)
-    observation_uuid: str = sa_field(ForeignKey('observation.uuid'), default=None, index=True)
+    observation_uuid: str = sa_field(
+        ForeignKey('observation.uuid'), default=None, primary_key=True, index=True
+    )
     user_id: int = sa_field(ForeignKey('user.id'), default=None, index=True)
     extension: str = sa_field(String, default=None)
     license: str = sa_field(String, default=None)
