@@ -1,26 +1,22 @@
-import csv
-import logging
-
+"""Functions for downloading and loading inaturalist open data into a database"""
 # TODO: Check local and remote timestamps to only download if a new version is available
 # TODO: Progress bar callback
 # TODO: Read CSVs in chunks
+import csv
 import os
 import tarfile
 from os.path import dirname, exists, expanduser, join
 
 import boto3
-from botocore.handlers import disable_signing
+from botocore import UNSIGNED
+from botocore.config import Config
+from rich import print
 from sqlalchemy import create_engine, insert
 from sqlalchemy.exc import OperationalError
 
-from pyinaturalist_open_data.constants import (
-    BUCKET_NAME,
-    DATA_DIR,
-    DEFAULT_DB_URI,
-    METADATA_DL_PATH,
-    METADATA_KEY,
-)
-from pyinaturalist_open_data.models import Base, Observation, Photo, Taxon, User
+from .constants import BUCKET_NAME, DATA_DIR, DEFAULT_DB_URI, METADATA_DL_PATH, METADATA_KEY
+from .models import Base, Observation, Photo, Taxon, User
+from .progress import get_download_progress, get_progress, get_spinner_progress
 
 MODEL_CSV_FILES = {
     Observation: 'observations.csv',
@@ -28,10 +24,6 @@ MODEL_CSV_FILES = {
     Taxon: 'taxa.csv',
     User: 'observers.csv',
 }
-
-logging.basicConfig(level='WARN')
-logger = logging.getLogger(__name__)
-logger.setLevel('INFO')
 
 
 def download_metadata(download_path: str = METADATA_DL_PATH):
@@ -45,19 +37,34 @@ def download_metadata(download_path: str = METADATA_DL_PATH):
 
     # Download combined package with authentication disabled
     if exists(download_path):
-        logger.info(f'File already exists: {download_path}')
+        print(f'File already exists: {download_path}')
     else:
-        logger.info(f'Downloading to: {download_path}')
-        resource = boto3.resource('s3')
-        resource.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
-        bucket = resource.Bucket(BUCKET_NAME)
-        bucket.download_file(METADATA_KEY, download_path)
+        print(f'Downloading to: {download_path}')
+        download_file(BUCKET_NAME, METADATA_KEY, download_path)
 
-    # Extract CSVs
-    logger.info('Extracting contents')
-    tar = tarfile.open(download_path, 'r:gz')
-    tar.extractall(path=dirname(download_path))
-    tar.close()
+    # Extract files
+    with get_spinner_progress('Extracting'):
+        tar = tarfile.open(download_path, 'r:gz')
+        tar.extractall(path=dirname(download_path))
+        tar.close()
+
+
+def download_file(bucket_name: str, key: str, download_path: str):
+    """Download a file from S3, with progress bar"""
+    # First get file size for progress bar
+    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+    response = s3.head_object(Bucket=bucket_name, Key=key)
+    file_size = response['ContentLength']
+
+    # Download file with a callback to periodically update progress
+    progress, task = get_download_progress(file_size)
+    with progress:
+        s3.download_file(
+            Bucket=bucket_name,
+            Key=key,
+            Filename=download_path,
+            Callback=lambda n_bytes: progress.update(task, advance=n_bytes),
+        )
 
 
 def load_all(db_uri: str = DEFAULT_DB_URI):
@@ -66,23 +73,42 @@ def load_all(db_uri: str = DEFAULT_DB_URI):
     """
     # Create tables, if they don't already exist
     engine = create_engine(db_uri, echo=True)
+    print('Creating tables')
     Base.metadata.create_all(engine)
 
     for model in [Observation, Photo, Taxon, User]:
         try:
             load_table(engine, model)
         except OperationalError as e:
-            logger.exception(e)
+            print(e)
 
 
 def load_table(engine, model):
+    """Load CSV contents into a table, with progress bar"""
     csv_path = join(DATA_DIR, MODEL_CSV_FILES[model])
-    logger.info(f'Loading data from {csv_path}')
+    print(f'Loading data from {csv_path}')
 
-    with open(csv_path, 'r') as f:
-        csv_reader = csv.reader(f, delimiter='\t')
-        next(csv_reader)  # Skip header
-        engine.execute(insert(model), [map_columns(model, row) for row in csv_reader])
+    num_lines = sum(1 for _ in open(csv_path)) - 1
+    progress, task = get_progress(num_lines, f'Loading {model} data...')
+    with progress:
+        with open(csv_path) as csv_file:
+            reader = csv.reader(csv_file, delimiter='\t')
+            next(reader)  # Skip header
+
+            for chunk in read_chunks(reader, progress, task):
+                engine.execute(insert(model), [map_columns(model, row) for row in chunk])
+
+
+def read_chunks(reader, progress, task, chunksize=2000):
+    """Read a CSV file in chunks"""
+    chunk = []
+    for i, line in enumerate(reader):
+        if i % chunksize == 0 and i > 0:
+            yield chunk
+            del chunk[:]
+            progress.update(task, advance=1)
+        chunk.append(line)
+    yield chunk
 
 
 def map_columns(model, row):
