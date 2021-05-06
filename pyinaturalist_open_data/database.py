@@ -30,12 +30,12 @@ def create_tables(engine):
     Base.metadata.create_all(engine)
 
 
-def load_all(db_uri: str = DEFAULT_DB_URI, verbose=False):
+def load_all(db_uri: str = DEFAULT_DB_URI, verbose=0):
     """Load contents of CSV files into a database. This is just here for convenience since it works
     with all supported DB dialects. DB-specific bulk inserts are faster, if available.
     """
     print('[cyan]Creating tables')
-    session = Session(bind=create_engine(db_uri, echo=verbose))
+    session = Session(bind=create_engine(db_uri, echo=verbose == 3))
     create_tables(session.get_bind())
     print(f'[cyan]Loading data from [magenta]{DATA_DIR}/*.csv[cyan]...')
 
