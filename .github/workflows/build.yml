@@ -24,19 +24,23 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - uses: snok/install-poetry@v1.1.4
+        with:
+          virtualenvs-in-project: true
 
-      # Cache packages per python version, and reuse until setup.py changes
-      - name: Cache pip packages
+      # Cache packages per python version, and reuse until lockfile changes
+      - name: Cache python packages
+        id: cache-packages
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('setup.py') }}
-          restore-keys: ${{ runner.os }}-pip-${{ matrix.python-version }}
-
+          path: .venv
+          key: venv-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        run: pip install poetry && poetry install
-      # - name: Run unit tests
-      #   run: pytest
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: poetry install -vn
+
+      # - name: Run unit tests... whenever I get around to writing them
+      #   run: poetry run pytest
 
   # Run code analysis checks, reports, etc.
   analyze:
@@ -45,24 +49,31 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
-      - name: Cache pip packages
+          python-version: ${{ env.LATEST_PY_VERSION }}
+      - uses: snok/install-poetry@v1.1.4
+        with:
+          virtualenvs-in-project: true
+
+      # Cache packages and reuse until lockfile changes
+      - name: Cache python packages
+        id: cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-3.8-${{ hashFiles('setup.py') }}
-          restore-keys: ${{ runner.os }}-pip-3.8
-
+          path: .venv
+          key: venv-${{ env.LATEST_PY_VERSION }}-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        run: pip install poetry && poetry install
+        # if: steps.cache.outputs.cache-hit != 'true'
+        run: poetry install -vn
+
       - name: Run style checks
         run: |
-          black --check --diff .
-          isort --check --diff .
+          poetry run black --check --diff .
+          poetry run isort --check --diff .
       - name: Run linter
-        run: flake8 .
+        run: poetry run flake8 .
       - name: Run type checks
-        run: mypy --ignore-missing-imports .
+        run: poetry run mypy --ignore-missing-imports .
+
       # - name: Generate code coverage report
       #   run: pytest --cov --cov-report=term --cov-report=html
       # - name: Send code coverage report to Coveralls
@@ -70,7 +81,7 @@ jobs:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       #   run: coveralls --service=github
 
-  # Deploy pre-release builds from pre-release branch, and stable builds on tags only
+  # Publish pre-release builds from pre-release branch, and stable builds on tags only
   release:
     needs: [test, analyze]
     if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/pre-release'
@@ -81,13 +92,10 @@ jobs:
         with:
           python-version: ${{ env.LATEST_PY_VERSION }}
 
-      # Build & deploy to PyPI
+      # Build & publish to PyPI
       - name: Install dependencies
-        run: pip install -U poetry twine
-      - name: Build wheel
+        run: pip install -U poetry
+      - name: Build artifacts
         run: poetry build
-      - name: Deploy to pypi
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: twine upload dist/*
+      - name: Publish to pypi
+        run: poetry publish -u  __token__ -p ${{ secrets.PYPI_TOKEN }}
