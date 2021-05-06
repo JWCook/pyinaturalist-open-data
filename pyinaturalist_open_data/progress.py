@@ -6,11 +6,12 @@ from rich.progress import (
     DownloadColumn,
     Progress,
     SpinnerColumn,
+    TaskID,
     TimeRemainingColumn,
     TransferSpeedColumn,
 )
 
-ProgressTask = Tuple[Progress, int]
+ProgressTask = Tuple[Progress, TaskID]
 
 
 def get_progress(total: int, description: str = 'Loading') -> ProgressTask:
@@ -41,5 +42,5 @@ def get_spinner_progress(description: str = 'Loading') -> Progress:
     return progress
 
 
-def get_task(progress, total: Optional[int], description: str) -> int:
+def get_task(progress, total: Optional[int], description: str) -> TaskID:
     return progress.add_task(f'[cyan]{description}...', total=total)

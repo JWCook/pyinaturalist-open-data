@@ -1,0 +1,101 @@
+name: Build
+
+on:
+  push:
+    branches: [main, pre-release]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+env:                                                        
+  LATEST_PY_VERSION: '3.9'                                  
+
+
+jobs:
+  # Run unit tests for each supported python version
+  test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: snok/install-poetry@v1.1.4
+        with:
+          virtualenvs-in-project: true
+
+      # Cache packages per python version, and reuse until lockfile changes
+      - name: Cache python packages
+        id: cache-packages
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ matrix.python-version }}-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: poetry install -vn
+
+      # - name: Run unit tests... whenever I get around to writing them
+      #   run: poetry run pytest
+
+  # Run code analysis checks, reports, etc.
+  analyze:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.LATEST_PY_VERSION }}
+      - uses: snok/install-poetry@v1.1.4
+        with:
+          virtualenvs-in-project: true
+
+      # Cache packages and reuse until lockfile changes
+      - name: Cache python packages
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: venv-${{ env.LATEST_PY_VERSION }}-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        # if: steps.cache.outputs.cache-hit != 'true'
+        run: poetry install -vn
+
+      - name: Run style checks
+        run: |
+          poetry run black --check --diff .
+          poetry run isort --check --diff .
+      - name: Run linter
+        run: poetry run flake8 .
+      - name: Run type checks
+        run: poetry run mypy .
+
+      # - name: Generate code coverage report
+      #   run: pytest --cov --cov-report=term --cov-report=html
+      # - name: Send code coverage report to Coveralls
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   run: coveralls --service=github
+
+  # Publish pre-release builds from pre-release branch, and stable builds on tags only
+  release:
+    needs: [test, analyze]
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/pre-release'
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ env.LATEST_PY_VERSION }}
+
+      # Build & publish to PyPI
+      - name: Install dependencies
+        run: pip install -U poetry
+      - name: Build artifacts
+        run: poetry build
+      - name: Publish to pypi
+        run: poetry publish -u  __token__ -p ${{ secrets.PYPI_TOKEN }}
