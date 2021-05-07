@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyinaturalist-open-data"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python utilities for working with inaturalist-open-data"
 authors = ["Jordan Cook"]
 homepage = "https://github.com/JWCook/pyinaturalist-open-data"

@@ -68,6 +68,8 @@ Options:
   --help                   Show this message and exit
 ```
 
+**Note:** Both `dl` and `load` will reuse local data if already exists and is up to date.
+
 `db` command:
 ```
 Usage: pynat db [OPTIONS]

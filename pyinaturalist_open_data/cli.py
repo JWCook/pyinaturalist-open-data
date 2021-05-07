@@ -45,18 +45,20 @@ def pynat(ctx, verbose):
 @uri_option
 @click.pass_context
 def load(ctx, download_dir, uri):
-    """Download and load all data into a database. By default, this will create a new SQLite
-    database.
+    """Download and load all data into a database. By default, this will create/update a SQLite
+    database. Reuses local data if already exists and is up to date.
     """
     download_metadata(download_dir, verbose=ctx.obj['verbose'])
     load_all(download_dir=download_dir, uri=uri, verbose=ctx.obj['verbose'])
 
 
-@pynat.command()
+@pynat.command(short_help='Download latest archive, if an update is available')
 @download_dir_option
 @click.pass_context
 def dl(ctx, download_dir):
-    """Download and extract all files in the inaturalist open data archive"""
+    """Download and extract all files in the inaturalist open data archive.
+    Reuses local data if it exists and is up to date.
+    """
     download_metadata(download_dir, verbose=ctx.obj['verbose'])
 
 

@@ -1,5 +1,6 @@
 """Functions for downloading and extracting inaturalist open data"""
-# TODO: Check local and remote timestamps to only download if a new version is available
+# TODO: Download separate archive files in parallel?
+from datetime import datetime, timezone
 from io import FileIO
 from os.path import basename, getsize
 from pathlib import Path
@@ -38,7 +39,7 @@ class ProgressIO(FileIO):
 
 
 def download_metadata(download_dir: PathOrStr = DATA_DIR, verbose: int = 0):
-    """Download and extract metadata archive
+    """Download and extract metadata archive. Reuses local data if already exists and is up to date.
 
     Args:
         download_path: Optional file path to download to
@@ -47,20 +48,48 @@ def download_metadata(download_dir: PathOrStr = DATA_DIR, verbose: int = 0):
     download_dir.mkdir(parents=True, exist_ok=True)
     download_file = download_dir / ARCHIVE_NAME
 
-    # Download combined package with authentication disabled
-    if download_file.exists():
-        print(f'File already exists: {download_file}')
-    else:
-        print(f'Downloading to: {download_file}')
-        s3_download(BUCKET_NAME, METADATA_KEY, download_file)
+    # Skip download if we're already up to date
+    if not check_download(download_file):
+        return
 
-    # Extract files
+    # Otherwise, download and extract files
+    print(f'Downloading to: {download_file}')
+    get_s3_file(BUCKET_NAME, METADATA_KEY, download_file)
     progress_file = ProgressIO(download_file)
     with FlatTarFile.open(fileobj=progress_file) as archive, progress_file.progress:
         archive.extractall(path=download_dir)
 
 
-def s3_download(bucket_name: str, key: str, download_file: PathOrStr):
+def check_download(download_file: Path) -> bool:
+    """Check if the file already exists locally, and if a newer version is not yet available"""
+    new_download = True
+    if download_file.exists():
+        s3_mtime = get_s3_mtime(BUCKET_NAME, METADATA_KEY)
+        file_mtime = get_file_mtime(download_file)
+        if s3_mtime > file_mtime:
+            print(f'[cyan]File exists, but is out of date:[/cyan] {download_file}')
+        else:
+            print(f'[cyan]File already exists and is up to date:[/cyan] {download_file}')
+            estimate_next_release(s3_mtime)
+            new_download = False
+    return new_download
+
+
+def get_file_mtime(file: Path) -> datetime:
+    """Get the modified time of a file, as a timezone-aware datetime"""
+    file_mtime = file.stat().st_mtime
+    return datetime.fromtimestamp(file_mtime).astimezone()
+
+
+#  TODO: code reuse
+def get_s3_mtime(bucket_name: str, key: str) -> datetime:
+    """Get the modified time of an S3 file"""
+    s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
+    head = s3.head_object(Bucket=bucket_name, Key=key)
+    return head['LastModified']
+
+
+def get_s3_file(bucket_name: str, key: str, download_file: PathOrStr):
     """Download a file from S3, with progress bar"""
     # Get file size for progress bar
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
@@ -76,6 +105,15 @@ def s3_download(bucket_name: str, key: str, download_file: PathOrStr):
             Filename=str(download_file),
             Callback=lambda n_bytes: progress.update(task, advance=n_bytes),
         )
+
+
+def estimate_next_release(s3_mtime: datetime):
+    """Get an estimate of time until next update. Updates are roughly monthly, but not necessarily
+    on the same day each month.
+    """
+    elapsed = datetime.now(timezone.utc) - s3_mtime
+    est_release_days = 31 - elapsed.days
+    print(f'[cyan]Possible new release in ~[magenta]{est_release_days} [cyan]days')
 
 
 if __name__ == '__main__':
