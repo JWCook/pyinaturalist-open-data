@@ -2,8 +2,27 @@
 name = "pyinaturalist-open-data"
 version = "0.1.0"
 description = "Python utilities for working with inaturalist-open-data"
-authors = ["'Jordan Cook'"]
+authors = ["Jordan Cook"]
+homepage = "https://github.com/JWCook/pyinaturalist-open-data"
+repository = "https://github.com/JWCook/pyinaturalist-open-data"
+keywords = ["inaturalist", "odp", "observations", "images"]
 license = "MIT"
+readme = "README.md"
+include = ["*.md"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9"
+]
+
+# TODO: Set up docs on Readthedocs
+# [tool.poetry.urls]
+# "Documentation" = "https://github.com/JWCook/pyinaturalist-open-data"
+
 
 [tool.poetry.dependencies]
 python = "^3.7"
