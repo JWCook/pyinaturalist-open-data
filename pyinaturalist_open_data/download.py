@@ -1,8 +1,8 @@
 """Functions for downloading and extracting inaturalist open data"""
 # TODO: Check local and remote timestamps to only download if a new version is available
-import os
 from io import FileIO
-from os.path import basename, exists, expanduser, getsize, join
+from os.path import basename, getsize
+from pathlib import Path
 from tarfile import TarFile
 from time import time
 
@@ -11,7 +11,7 @@ from botocore import UNSIGNED
 from botocore.config import Config
 from rich import print
 
-from .constants import ARCHIVE_NAME, BUCKET_NAME, DATA_DIR, METADATA_KEY
+from .constants import ARCHIVE_NAME, BUCKET_NAME, DATA_DIR, METADATA_KEY, PathOrStr
 from .progress import get_download_progress
 
 
@@ -37,18 +37,18 @@ class ProgressIO(FileIO):
         return super().read(size)
 
 
-def download_metadata(download_dir: str = DATA_DIR, verbose: int = 0):
+def download_metadata(download_dir: PathOrStr = DATA_DIR, verbose: int = 0):
     """Download and extract metadata archive
 
     Args:
         download_path: Optional file path to download to
     """
-    download_dir = expanduser(download_dir)
-    os.makedirs(download_dir, exist_ok=True)
-    download_file = join(download_dir, ARCHIVE_NAME)
+    download_dir = Path(download_dir).expanduser()
+    download_dir.mkdir(parents=True, exist_ok=True)
+    download_file = download_dir / ARCHIVE_NAME
 
     # Download combined package with authentication disabled
-    if exists(download_file):
+    if download_file.exists():
         print(f'File already exists: {download_file}')
     else:
         print(f'Downloading to: {download_file}')
@@ -60,12 +60,12 @@ def download_metadata(download_dir: str = DATA_DIR, verbose: int = 0):
         archive.extractall(path=download_dir)
 
 
-def s3_download(bucket_name: str, key: str, download_file: str):
+def s3_download(bucket_name: str, key: str, download_file: PathOrStr):
     """Download a file from S3, with progress bar"""
     # Get file size for progress bar
     s3 = boto3.client('s3', config=Config(signature_version=UNSIGNED))
-    response = s3.head_object(Bucket=bucket_name, Key=key)
-    file_size = response['ContentLength']
+    head = s3.head_object(Bucket=bucket_name, Key=key)
+    file_size = head['ContentLength']
 
     # Download file with a callback to periodically update progress
     progress, task = get_download_progress(file_size)
@@ -73,7 +73,7 @@ def s3_download(bucket_name: str, key: str, download_file: str):
         s3.download_file(
             Bucket=bucket_name,
             Key=key,
-            Filename=download_file,
+            Filename=str(download_file),
             Callback=lambda n_bytes: progress.update(task, advance=n_bytes),
         )
 

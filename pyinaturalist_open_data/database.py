@@ -1,7 +1,7 @@
 """Functions for loading inaturalist open data into a database"""
 import csv
 from logging import getLogger
-from os.path import join
+from pathlib import Path
 from time import time
 from typing import List
 
@@ -12,7 +12,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.sqltypes import Boolean, DateTime
 
-from .constants import DATA_DIR, DEFAULT_DB_URI
+from .constants import DATA_DIR, DEFAULT_DB_URI, PathOrStr
 from .models import Base, Observation, Photo, Taxon, User
 from .progress import get_progress
 
@@ -45,7 +45,7 @@ def create_tables(engine, uri: str = DEFAULT_DB_URI):
 
 
 def load_all(
-    download_dir: str = DATA_DIR,
+    download_dir: PathOrStr = DATA_DIR,
     tables: List[str] = None,
     uri: str = DEFAULT_DB_URI,
     verbose: int = 0,
@@ -71,7 +71,7 @@ def load_all(
     for model in models:
         try:
             start = time()
-            load_table(session, model, download_dir)
+            load_table(session, model, Path(download_dir))
             if verbose:
                 print(f'Finished in {time() - start:.2f} seconds')
         except OperationalError as e:
@@ -80,9 +80,9 @@ def load_all(
     print(f'[cyan]Finished populating database at {uri}')
 
 
-def load_table(session, model, download_dir):
+def load_table(session, model, download_dir: Path):
     """Load CSV contents into a table, with progress bar"""
-    csv_path = join(download_dir, MODEL_CSV_FILES[model])
+    csv_path = download_dir / MODEL_CSV_FILES[model]
     progress, task = get_progress(0, f'Loading [magenta]{model.__name__}[/magenta] records')
 
     # Clear the table and insert everything; faster than checking if individual rows exist
