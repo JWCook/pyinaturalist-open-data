@@ -32,8 +32,15 @@ MODEL_NAMES = {
 logger = getLogger(__name__)
 
 
-def create_tables(engine):
-    """Create tables + indexes based on models, if they don't already exist"""
+def create_tables(engine, uri: str = DEFAULT_DB_URI):
+    """Create tables + indexes based on models, if they don't already exist
+
+    Args:
+        engine: A SQLAlchemy engine to connect with
+        uri: Alternate database URI to connect to
+    """
+    print('[cyan]Creating tables')
+    engine = engine or create_engine(uri)
     Base.metadata.create_all(engine)
 
 
@@ -52,7 +59,6 @@ def load_all(
         uri: Alternate database URI to connect to
         verbose: Show additional output
     """
-    print('[cyan]Creating tables')
     session = Session(bind=create_engine(uri, echo=verbose == 3))
     create_tables(session.get_bind())
     print(f'[cyan]Loading data from [magenta]{DATA_DIR}/*.csv[cyan]...')
@@ -71,15 +77,16 @@ def load_all(
         except OperationalError as e:
             print(e)
 
+    print(f'[cyan]Finished populating database at {uri}')
+
 
 def load_table(session, model, download_dir):
     """Load CSV contents into a table, with progress bar"""
     csv_path = join(download_dir, MODEL_CSV_FILES[model])
     progress, task = get_progress(0, f'Loading [magenta]{model.__name__}[/magenta] records')
 
-    # Clear table and insert everything; faster than checking if individual rows exist
+    # Clear the table and insert everything; faster than checking if individual rows exist
     session.execute(delete(model))
-
     with progress, open(csv_path) as csv_file:
         num_lines = sum(1 for _ in open(csv_path)) - 1
         progress.update(task, total=num_lines)
