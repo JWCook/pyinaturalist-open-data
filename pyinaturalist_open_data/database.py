@@ -32,7 +32,7 @@ MODEL_NAMES = {
 logger = getLogger(__name__)
 
 
-def create_tables(engine, uri: str = DEFAULT_DB_URI):
+def create_tables(engine=None, uri: str = DEFAULT_DB_URI):
     """Create tables + indexes based on models, if they don't already exist
 
     Args:
@@ -42,6 +42,7 @@ def create_tables(engine, uri: str = DEFAULT_DB_URI):
     print('[cyan]Creating tables')
     engine = engine or create_engine(uri)
     Base.metadata.create_all(engine)
+    print('[cyan]Done')
 
 
 def load_all(
@@ -66,7 +67,7 @@ def load_all(
     if tables:
         models = [MODEL_NAMES[table] for table in tables]
     else:
-        models = list(MODEL_NAMES.values())
+        models = [User, Taxon, Observation, Photo]
 
     for model in models:
         try:
@@ -77,7 +78,7 @@ def load_all(
         except OperationalError as e:
             print(e)
 
-    print(f'[cyan]Finished populating database at {uri}')
+    print(f'[cyan]Finished populating database at[/cyan] {uri}')
 
 
 def load_table(session, model, download_dir: Path):

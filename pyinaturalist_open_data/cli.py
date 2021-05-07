@@ -13,6 +13,12 @@ VERBOSITY_LOG_LEVELS = {0: 'ERROR', 1: 'WARN', 2: 'INFO', 3: 'DEBUG'}
 download_dir_option = click.option(
     '-d', '--download-dir', default=DATA_DIR, help='Alternate path for downloads'
 )
+init_option = click.option(
+    '-i',
+    '--init',
+    is_flag=True,
+    help="Just initialize the database with tables + indexes without loading data",
+)
 tables_option = click.option(
     '-t',
     '--tables',
@@ -64,21 +70,18 @@ def dl(ctx, download_dir):
 
 @pynat.command()
 @download_dir_option
+@init_option
 @tables_option
 @uri_option
-@click.option(
-    '-i',
-    '--init',
-    is_flag=True,
-    help="Just initialize the database with tables + indexes without loading data",
-)
 @click.pass_context
-def db(ctx, download_dir, tables, uri):
+def db(ctx, download_dir, init, tables, uri):
     """Load contents of CSV files into a database. Also creates tables and indexes, if they don't
     already exist.
     """
-    create_tables(uri)
-    load_all(download_dir=download_dir, tables=tables, uri=uri, verbose=ctx.obj['verbose'])
+    if init:
+        create_tables(uri=uri)
+    else:
+        load_all(download_dir=download_dir, tables=tables, uri=uri, verbose=ctx.obj['verbose'])
 
 
 if __name__ == '__main__':
