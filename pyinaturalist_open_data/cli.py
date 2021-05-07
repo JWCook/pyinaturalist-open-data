@@ -2,21 +2,17 @@ from logging import basicConfig, getLogger
 
 import click
 
-from .constants import DATA_DIR, DEFAULT_DB_URI, METADATA_DL_PATH
-from .database import load_all
+from .constants import DATA_DIR, DEFAULT_DB_URI
+from .database import MODEL_NAMES, load_all
 from .download import download_metadata
 
-
-VERBOSITY_LOG_LEVELS = {
-    0: 'ERROR',
-    1: 'WARN',
-    2: 'INFO',
-    3: 'DEBUG'
-}
+TABLES = ['observation', 'photo', 'taxon', 'user']
+VERBOSITY_LOG_LEVELS = {0: 'ERROR', 1: 'WARN', 2: 'INFO', 3: 'DEBUG'}
 
 download_dir_option = click.option(
     '-d', '--download-dir', default=DATA_DIR, help='Alternate path for downloads'
 )
+
 
 @click.group()
 @click.option('-v', '--verbose', count=True, help='Show more detailed output')
@@ -42,11 +38,18 @@ def dl(ctx, download_dir):
 
 @inat.command()
 @download_dir_option
+@click.option(
+    '-t',
+    '--tables',
+    type=click.Choice(MODEL_NAMES.keys(), case_sensitive=False),
+    multiple=True,
+    help='Load only these specific tables',
+)
 @click.option('-u', '--uri', default=DEFAULT_DB_URI, help='Alternate database URI to connect to')
 @click.pass_context
-def load(ctx, download_dir, uri):
+def load(ctx, download_dir, tables, uri):
     """Load contents of CSV files into a database"""
-    load_all(uri, download_dir=download_dir, verbose=ctx.obj['verbose'])
+    load_all(download_dir=download_dir, tables=tables, uri=uri, verbose=ctx.obj['verbose'])
 
 
 if __name__ == '__main__':

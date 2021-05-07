@@ -3,6 +3,7 @@ import csv
 from logging import getLogger
 from os.path import join
 from time import time
+from typing import List
 
 from dateutil.parser import parse as parse_date
 from rich import print
@@ -21,6 +22,12 @@ MODEL_CSV_FILES = {
     Taxon: 'taxa.csv',
     User: 'observers.csv',
 }
+MODEL_NAMES = {
+    'observation': Observation,
+    'photo': Photo,
+    'taxon': Taxon,
+    'user': User,
+}
 
 logger = getLogger(__name__)
 
@@ -30,16 +37,32 @@ def create_tables(engine):
     Base.metadata.create_all(engine)
 
 
-def load_all(db_uri: str = DEFAULT_DB_URI, download_dir: str = DATA_DIR, verbose: int = 0):
+def load_all(
+    download_dir: str = DATA_DIR,
+    tables: List[str] = None,
+    uri: str = DEFAULT_DB_URI,
+    verbose: int = 0,
+):
     """Load contents of CSV files into a database. This is just here for convenience since it works
     with all supported DB dialects. DB-specific bulk inserts are faster, if available.
+
+    Args:
+        download_dir: Alternate path for downloads
+        tables: Specific table(s) to load instead of all
+        uri: Alternate database URI to connect to
+        verbose: Show additional output
     """
     print('[cyan]Creating tables')
-    session = Session(bind=create_engine(db_uri, echo=verbose == 3))
+    session = Session(bind=create_engine(uri, echo=verbose == 3))
     create_tables(session.get_bind())
     print(f'[cyan]Loading data from [magenta]{DATA_DIR}/*.csv[cyan]...')
 
-    for model in [User, Taxon, Observation, Photo]:
+    if tables:
+        models = [MODEL_NAMES[table] for table in tables]
+    else:
+        models = list(MODEL_NAMES.values())
+
+    for model in models:
         try:
             start = time()
             load_table(session, model, download_dir)
