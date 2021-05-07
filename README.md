@@ -1,7 +1,11 @@
 # pyinaturalist-open-data
 **This is a work in progress and not yet complete!**
 
-Python utilities for working with [inaturalist-open-data](https://github.com/inaturalist/inaturalist-open-data) and integrating with [iNaturalist API](https://api.inaturalist.org/v1/docs/#/) data via [pyinaturalist](https://github.com/niconoe/pyinaturalist).
+This is a python library and CLI package for working with
+[inaturalist-open-data](https://github.com/inaturalist/inaturalist-open-data).
+
+See the CLI in action here and on [asciinema](https://asciinema.org/a/412516):
+[![asciicast](docs/pynat-demo.gif)](https://asciinema.org/a/412516)
 
 ## Installation
 Install with pip:
@@ -101,3 +105,12 @@ load_all()
 ```
 
 Full package documentation on readthedocs will be coming soon.
+
+## Planned features
+Some features I would ideally like to add to this:
+* Performance optimizations
+* Basic querying features
+* Image downloads based on query results
+* Integration with [iNaturalist API](https://api.inaturalist.org/v1/docs/#/) data via
+  [pyinaturalist](https://github.com/niconoe/pyinaturalist)
+* Integration with CSV data from the [iNaturalist export tool](https://www.inaturalist.org/observations/export)
