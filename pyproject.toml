@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyinaturalist-open-data"
-version = "0.2.0"
+version = "0.1.1"
 description = "Python utilities for working with inaturalist-open-data"
 authors = ["Jordan Cook"]
 homepage = "https://github.com/JWCook/pyinaturalist-open-data"
@@ -8,16 +8,17 @@ repository = "https://github.com/JWCook/pyinaturalist-open-data"
 keywords = ["inaturalist", "odp", "observations", "images"]
 license = "MIT"
 readme = "README.md"
-include = ["*.md"]
+include = [
+    { path = "*.md" },
+    { path = "test", format = "sdist" }
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9"
+    "Topic :: Software Development :: Libraries :: Python Modules"
 ]
+
 
 # TODO: Set up docs on Readthedocs
 # [tool.poetry.urls]
@@ -25,7 +26,7 @@ classifiers = [
 
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 appdirs = "^1.4"
 boto3 = "^1.17"
 click = "~7.1"
@@ -33,13 +34,14 @@ click-help-colors = "^0.9"
 pyinaturalist = "~0.12.0"
 requests-cache = "~0.6.3"
 rich = ">=10.0"
+sqlalchemy = "^1.4"
 
 [tool.poetry.dev-dependencies]
 black = "21.5b0"
 isort = "^5.8"
 mypy = "^0.812"
 flake8 = "^3.9"
-pre-commit = "^2.12.1"
+pre-commit = "^2.12"
 
 [tool.poetry.scripts]
 pynat = 'pyinaturalist_open_data.cli:pynat'
