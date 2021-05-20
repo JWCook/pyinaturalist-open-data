@@ -1,10 +1,19 @@
 # pyinaturalist-open-data
+
+[![Build status](https://github.com/JWCook/pyinaturalist-open-data/workflows/Build/badge.svg)](https://github.com/JWCook/pyinaturalist-open-data/actions)
+[![PyPI](https://img.shields.io/pypi/v/pyinaturalist-open-data?color=blue)](https://pypi.org/project/pyinaturalist-open-data)
+[![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/pyinaturalist-open-data)](https://pypi.org/project/pyinaturalist-open-data)
+[![PyPI - Format](https://img.shields.io/pypi/format/pyinaturalist-open-data?color=blue)](https://pypi.org/project/pyinaturalist-open-data)
+
 **This is a work in progress and not yet complete!**
 
-This is a python library and CLI package for working with
+**pyinaturalist-open-data** is a python library and CLI tool for working with
 [inaturalist-open-data](https://github.com/inaturalist/inaturalist-open-data).
+Its goal is to make it easy to import and use this dataset in a python application backed by
+[any SQLAlchemy-compatible database engine](https://docs.sqlalchemy.org/en/14/core/engines.html#supported-databases)
+(SQLite by default), or simply for local data exploration.
 
-See the CLI in action here and on [asciinema](https://asciinema.org/a/412516):
+See the CLI in action here or on [asciinema](https://asciinema.org/a/412516):
 [![asciicast](docs/pynat-demo.gif)](https://asciinema.org/a/412516)
 
 ## Installation
@@ -14,7 +23,7 @@ pip install pyinaturalist-open-data
 ```
 
 Or for local development:
-```
+```bash
 git clone https://github.com/JWCook/pyinaturalist-open-data.git
 cd pyinaturalist-open-data
 pip install poetry && poetry install
@@ -112,5 +121,5 @@ Some features I would ideally like to add to this:
 * Basic querying features
 * Image downloads based on query results
 * Integration with [iNaturalist API](https://api.inaturalist.org/v1/docs/#/) data via
-  [pyinaturalist](https://github.com/niconoe/pyinaturalist)
+  [pyinaturalist](https://github.com/JWCook/pyinaturalist-open-data)
 * Integration with CSV data from the [iNaturalist export tool](https://www.inaturalist.org/observations/export)
