@@ -19,29 +19,24 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
-
 # TODO: Set up docs on Readthedocs
 # [tool.poetry.urls]
 # "Documentation" = "https://github.com/JWCook/pyinaturalist-open-data"
 
-
 [tool.poetry.dependencies]
 python = "^3.8"
-appdirs = "^1.4"
-boto3 = "^1.17"
-click = "~7.1"
+boto3 = "^1.21"
+click = "^8.1"
 click-help-colors = "^0.9"
-pyinaturalist = "~0.12.0"
-requests-cache = "~0.6.3"
-rich = ">=10.0"
+pyinaturalist = ">=0.17.0.dev2"
+pyinaturalist-convert = ">=0.2" #{version=">=0.3", extras=["s3-import"]}
 sqlalchemy = "^1.4"
 
 [tool.poetry.dev-dependencies]
-black = "21.5b0"
-isort = "^5.8"
+black = "^22.3"
+isort = "^5.10"
 mypy = "^0.812"
 flake8 = "^3.9"
-pre-commit = "^2.12"
 
 [tool.poetry.scripts]
 pynat = 'pyinaturalist_open_data.cli:pynat'
