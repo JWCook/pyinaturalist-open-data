@@ -5,7 +5,8 @@
 [![PyPI - Python Versions](https://img.shields.io/pypi/pyversions/pyinaturalist-open-data)](https://pypi.org/project/pyinaturalist-open-data)
 [![PyPI - Format](https://img.shields.io/pypi/format/pyinaturalist-open-data?color=blue)](https://pypi.org/project/pyinaturalist-open-data)
 
-**This is a work in progress and not yet complete!**
+**Notice:** This library has been merged into [pyinaturalist-convert](https://github.com/pyinat/pyinaturalist-convert).
+
 
 **pyinaturalist-open-data** is a python library and CLI tool for working with
 [inaturalist-open-data](https://github.com/inaturalist/inaturalist-open-data).
@@ -112,14 +113,3 @@ from pyinaturalist_open_data import download_metadata, load_all
 download_metadata()
 load_all()
 ```
-
-Full package documentation on readthedocs will be coming soon.
-
-## Planned features
-Some features I would ideally like to add to this:
-* Performance optimizations
-* Basic querying features
-* Image downloads based on query results
-* Integration with [iNaturalist API](https://api.inaturalist.org/v1/docs/#/) data via
-  [pyinaturalist](https://github.com/JWCook/pyinaturalist-open-data)
-* Integration with CSV data from the [iNaturalist export tool](https://www.inaturalist.org/observations/export)
